@@ -80,8 +80,7 @@ class Imapcount:
         mcount = {}
         msize = {}
 
-        for mn in iter(msgs):
-            j = msgs[mn]
+        for mn, j in msgs.items():
             e = j[b'ENVELOPE']
             s = j[b'RFC822.SIZE']
             ef = e.from_[0]
