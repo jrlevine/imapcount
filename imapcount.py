@@ -4,6 +4,7 @@
 
 import imapclient
 import datetime
+from email.header import decode_header
 
 class Imapcount:
     def __init__(self, host='imap.ietf.org', iuser='anonymous', ipass='guest',
@@ -98,7 +99,13 @@ class Imapcount:
         ftime = self.newtbase.strftime("%c")
         if fto:
             print(f"To: {fto}")
-        print(f'Subject: Messages from the {mlist} list for the {"month" if self.month else "week"} ending {ftime}\n')
+        print(f'Subject: Messages from the {mlist} list for the {"month" if self.month else "week"} ending {ftime}')
+        # for decoded names
+        print("Content-Type: text/plain; charset=utf-8")
+        print("Mime-Version: 1.0")
+        print("Content-Transfer-Encoding: 8bit")
+        print()
+
         addrs = list(mname)
         if count:
             addrs.sort(key=lambda a: msize[a], reverse=True) # sort by size
@@ -107,7 +114,12 @@ class Imapcount:
             addrs.sort(key=lambda a: mcount[a], reverse=True) # sort by count
             addrs.sort(key=lambda a: msize[a], reverse=True) # sort by size
         for a in addrs:
-            print("{0:3d} |{1:7d} | {2} <{3}>".format(mcount[a], msize[a], mname[a], a))
+            aname = mname[a]
+            if aname.startswith('=?'):
+                dh = decode_header(aname)[0]
+                aname = dh[0].decode(dh[1])
+
+            print("{0:3d} |{1:7d} | {2} <{3}>".format(mcount[a], msize[a], aname, a))
 
         self.i.close_folder()
 
