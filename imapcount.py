@@ -4,12 +4,6 @@
 
 import imapclient
 import datetime
-import re
-
-# override default IMAP server, user, and password
-ihost = None
-iuser = None
-ipass = None
 
 class Imapcount:
     def __init__(self, host='imap.ietf.org', iuser='anonymous', ipass='guest',
