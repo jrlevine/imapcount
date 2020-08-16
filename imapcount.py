@@ -101,11 +101,11 @@ class Imapcount:
         print(f'Subject: Messages from the {mlist} list for the {"month" if self.month else "week"} ending {ftime}\n')
         addrs = list(mname)
         if count:
-            addrs = sorted(addrs, key=lambda a: msize[a], reverse=True) # sort by size
-            addrs = sorted(addrs, key=lambda a: mcount[a], reverse=True) # sort by count
+            addrs.sort(key=lambda a: msize[a], reverse=True) # sort by size
+            addrs.sort(key=lambda a: mcount[a], reverse=True) # sort by count
         else:
-            addrs = sorted(addrs, key=lambda a: mcount[a], reverse=True) # sort by size
-            addrs = sorted(addrs, key=lambda a: msize[a], reverse=True) # sort by size
+            addrs.sort(key=lambda a: mcount[a], reverse=True) # sort by count
+            addrs.sort(key=lambda a: msize[a], reverse=True) # sort by size
         for a in addrs:
             print("{0:3d} |{1:7d} | {2} <{3}>".format(mcount[a], msize[a], mname[a], a))
 
