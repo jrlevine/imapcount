@@ -85,7 +85,7 @@ class Imapcount:
             e = j[b'ENVELOPE']
             s = j[b'RFC822.SIZE']
             ef = e.from_[0]
-            addr = f"{ef.mailbox.decode()}@{ef.host.decode()}"
+            addr = f"{ef.mailbox.decode()}@{ef.host.decode()}".lower()
             if not addr in mname:
                 if ef.name:
                     mname[addr] = ef.name.decode()
@@ -108,11 +108,10 @@ class Imapcount:
 
         addrs = list(mname)
         if count:
-            addrs.sort(key=lambda a: msize[a], reverse=True) # sort by size
-            addrs.sort(key=lambda a: mcount[a], reverse=True) # sort by count
+            addrs.sort(key=lambda a: (mcount[a], msize[a]), reverse=True) # sort by count, size
         else:
-            addrs.sort(key=lambda a: mcount[a], reverse=True) # sort by count
-            addrs.sort(key=lambda a: msize[a], reverse=True) # sort by size
+            addrs.sort(key=lambda a: (msize[a], mcount[a]), reverse=True) # sort by size, count
+
         for a in addrs:
             aname = mname[a]
             if aname.startswith('=?'):
