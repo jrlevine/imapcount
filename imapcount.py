@@ -113,10 +113,17 @@ class Imapcount:
 
         for a in addrs:
             aname = mname[a]
-            if aname.startswith('=?'):
+            if '=?' in aname:
                 try:
                     dhl = decode_header(aname)
-                    aname = "".join((dh[0].decode(dh[1]) for dh in dhl))
+                    aname = ""
+                    for dhs, dht in dhl:
+                        if type(dhs) is str:
+                            aname += dhs
+                        elif dht is None:
+                            aname += dhs.decode()
+                        else:
+                            aname += dhs.decode(dht)
                 except Exception as err: # in case something we can't decode
                     aname = f"{aname} ({err})"
 
