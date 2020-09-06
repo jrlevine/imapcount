@@ -56,7 +56,7 @@ class Imapcount:
                 return x
         return None
 
-    def dofolder(self, mlist, count=False, fto=None):
+    def dofolder(self, mlist, count=False, fto=None, derole=None):
         """
         read new messages from a folder
         count number and volume by sender
@@ -87,7 +87,10 @@ class Imapcount:
             addr = f"{ef.mailbox.decode()}@{ef.host.decode()}".lower()
             if not addr in mname:
                 if ef.name:
-                    mname[addr] = ef.name.decode()
+                    if derole and ef.host.decode() == derole:
+                        mname[addr] = 'Role account'
+                    else:
+                        mname[addr] = ef.name.decode()
                 else:
                     mname[addr] = ""
                 mcount[addr] = 0
@@ -139,8 +142,9 @@ if __name__=="__main__":
     parser.add_argument("-m", action='store_true', help='month rather than week')
     parser.add_argument("-c", action='store_true', help='sort by count')
     parser.add_argument("--to", type=str, help='To address')
+    parser.add_argument("-r", type=str, help='Role account domain')
     parser.add_argument("list", type=str, help='list to count')
     args = parser.parse_args()
 
     ii = Imapcount(month=args.m, debug=args.d)
-    ii.dofolder(args.list, count=args.c, fto=args.to)
+    ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r)
