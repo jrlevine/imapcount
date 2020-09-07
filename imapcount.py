@@ -14,20 +14,8 @@ class Imapcount:
         self.i.login(iuser, ipass)
         self.debug = debug
         
-        # one week
-        self.newtbase = datetime.datetime.today()
+        # one week or month
         self.month = month
-        if month:
-            b = self.newtbase
-            if b.month == 1:
-                self.tbase = datetime.datetime(b.year-1, 12, b.day, b.hour, b.minute, b.second)
-            else:
-                self.tbase = datetime.datetime(b.year, b.month-1, b.day, b.hour, b.minute, b.second)
-        else:
-            self.tbase = self.newtbase - datetime.timedelta(days=7)
-        if debug:
-            print("from",self.tbase,"to",self.newtbase)
-            
         self.folders = None
 
     def closeimap(self):
@@ -56,10 +44,12 @@ class Imapcount:
                 return x
         return None
 
-    def dofolder(self, mlist, count=False, fto=None, derole=None):
+    def dofolder(self, mlist, count=False, fto=None, derole=None, prev=None):
         """
         read new messages from a folder
-        count number and volume by sender
+        report number and size, by count if count otherwise size
+        derole domain to say "Role Aaccount"
+        fto address to put into a To: header
         """
 
         fname = self.list2folder(mlist)
@@ -70,7 +60,25 @@ class Imapcount:
         # this better work
         f = self.i.select_folder(fname, readonly=True)
         
-        ym = self.i.search([u'SINCE', self.tbase]) # get the last week's or month's
+        if self.month:
+            ndays = 30                  # fake months
+        else:
+            ndays = 7
+
+        now = datetime.datetime.today()
+        if prev:
+            tend = now  - datetime.timedelta(days=ndays*prev)
+            tbase = tend - datetime.timedelta(days=ndays)
+            if self.debug:
+                print("from",self.tbase,"to",self.newtbase)
+            ym = self.i.search(['BEFORE', tend, 'SINCE', tbase]) # get that week's stuff
+        else:
+            tend = now
+            tbase = now  - datetime.timedelta(days=ndays)
+            if self.debug:
+                print("from",tbase,"to", now)
+            ym = self.i.search(['SINCE', tbase]) # get the last week's or month's
+
         if self.debug:
             print("date list",ym)
 
@@ -98,7 +106,7 @@ class Imapcount:
             mcount[addr] += 1
             msize[addr] += s
 
-        ftime = self.newtbase.strftime("%c")
+        ftime = tend.strftime("%c")
         if fto:
             print(f"To: {fto}")
         print(f'Subject: Messages from the {mlist} list for the {"month" if self.month else "week"} ending {ftime}')
@@ -141,10 +149,11 @@ if __name__=="__main__":
     parser.add_argument("-d", action='store_true', help='debug stuff')
     parser.add_argument("-m", action='store_true', help='month rather than week')
     parser.add_argument("-c", action='store_true', help='sort by count')
+    parser.add_argument("-p", type=int, help='previous N weeks or months')
     parser.add_argument("--to", type=str, help='To address')
     parser.add_argument("-r", type=str, help='Role account domain')
     parser.add_argument("list", type=str, help='list to count')
     args = parser.parse_args()
 
     ii = Imapcount(month=args.m, debug=args.d)
-    ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r)
+    ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r, prev=args.p)
