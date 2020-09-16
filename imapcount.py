@@ -44,7 +44,7 @@ class Imapcount:
                 return x
         return None
 
-    def dofolder(self, mlist, count=False, fto=None, derole=None, prev=None):
+    def dofolder(self, mlist, count=False, fto=None, derole=None, prev=None, pct=False):
         """
         read new messages from a folder
         report number and size, by count if count otherwise size
@@ -88,6 +88,9 @@ class Imapcount:
         mcount = {}
         msize = {}
 
+        totcount = 0
+        totsize = 0
+
         for mn, j in msgs.items():
             e = j[b'ENVELOPE']
             s = j[b'RFC822.SIZE']
@@ -105,6 +108,8 @@ class Imapcount:
                 msize[addr] = 0
             mcount[addr] += 1
             msize[addr] += s
+            totcount += 1
+            totsize += s
 
         ftime = tend.strftime("%c")
         if fto:
@@ -138,7 +143,11 @@ class Imapcount:
                 except Exception as err: # in case something we can't decode
                     aname = f"{mname[a]} ({err})"
 
-            print("{0:3d} |{1:7d} | {2} <{3}>".format(mcount[a], msize[a], aname, a))
+            if pct:
+                print("{0:3d} ({4:4.1f}%) |{1:7d} ({5:4.1f}%) | {2} <{3}>".format(mcount[a], msize[a],
+                    aname, a, 100.0*mcount[a]/totcount, 100.0*msize[a]/totsize))
+            else:
+                print("{0:3d} |{1:7d} | {2} <{3}>".format(mcount[a], msize[a], aname, a))
 
         self.i.close_folder()
 
@@ -148,6 +157,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description='count messages')
     parser.add_argument("-d", action='store_true', help='debug stuff')
     parser.add_argument("-m", action='store_true', help='month rather than week')
+    parser.add_argument("-f", action='store_true', help='report percent (fraction)')
     parser.add_argument("-c", action='store_true', help='sort by count')
     parser.add_argument("-p", type=int, help='previous N weeks or months')
     parser.add_argument("--to", type=str, help='To address')
@@ -156,4 +166,4 @@ if __name__=="__main__":
     args = parser.parse_args()
 
     ii = Imapcount(month=args.m, debug=args.d)
-    ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r, prev=args.p)
+    ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r, prev=args.p, pct=args.f)
