@@ -127,6 +127,13 @@ class Imapcount:
         else:
             addrs.sort(key=lambda a: (msize[a], mcount[a]), reverse=True) # sort by size, count
 
+        if pct:
+            print("   Count    |      Bytes     |  Who")
+            print("------------+----------------+-------")
+        else:
+            print("Count |  Bytes  |  Who")
+            print("------+---------+-------")
+
         for a in addrs:
             aname = mname[a]
             if '=?' in aname:
@@ -147,7 +154,7 @@ class Imapcount:
                 print("{0:3d} ({4:4.1f}%) |{1:7d} ({5:4.1f}%) | {2} <{3}>".format(mcount[a], msize[a],
                     aname, a, 100.0*mcount[a]/totcount, 100.0*msize[a]/totsize))
             else:
-                print("{0:3d} |{1:7d} | {2} <{3}>".format(mcount[a], msize[a], aname, a))
+                print("{0:5d} |{1:8d} | {2} <{3}>".format(mcount[a], msize[a], aname, a))
 
         self.i.close_folder()
 
