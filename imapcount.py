@@ -5,6 +5,7 @@
 import imapclient
 import datetime
 from email.header import decode_header
+import sys
 
 class Imapcount:
     def __init__(self, host='imap.ietf.org', iuser='anonymous', ipass='guest',
@@ -53,7 +54,7 @@ class Imapcount:
                 return x
         return None
 
-    def dofolder(self, mlist, count=False, fto=None, derole=None, prev=None, pct=False):
+    def dofolder(self, mlist, count=False, fto=None, derole=None, prev=None, pct=False, min=None):
         """
         read new messages from a folder
         report number and size, by count if count otherwise size
@@ -63,8 +64,8 @@ class Imapcount:
 
         fname = self.list2folder(mlist)
         if not fname:
-            print("no folder",mlist)
-            return
+            print("no folder",mlist, file=sys.stderr)
+            return False
 
         # this better work
         f = self.i.select_folder(fname, readonly=True)
@@ -120,6 +121,11 @@ class Imapcount:
             totcount += 1
             totsize += s
 
+        if min and totcount < min:
+            print(f"No report, count {totcount}", file=sys.stderr)
+            self.i.close_folder()
+            return False
+
         ftime = tend.strftime("%c")
         if fto:
             print(f"To: {fto}")
@@ -166,7 +172,7 @@ class Imapcount:
                 print("{0:5d} |{1:8d} | {2} <{3}>".format(mcount[a], msize[a], aname, a))
 
         self.i.close_folder()
-
+        return True
 
 if __name__=="__main__":
     import argparse
@@ -176,10 +182,15 @@ if __name__=="__main__":
     parser.add_argument("-f", action='store_true', help='report percent (fraction)')
     parser.add_argument("-c", action='store_true', help='sort by count')
     parser.add_argument("-p", type=int, help='previous N weeks or months')
+    parser.add_argument("-q", type=int, help='minimum number to report', default=10)
     parser.add_argument("--to", type=str, help='To address')
     parser.add_argument("-r", type=str, help='Role account domain')
     parser.add_argument("list", type=str, help='list to count')
     args = parser.parse_args()
 
     ii = Imapcount(month=args.m, debug=args.d)
-    ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r, prev=args.p, pct=args.f)
+    if ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r, prev=args.p, pct=args.f, min=args.q):
+        exit(0)
+    # no report
+    exit(1)
+
