@@ -18,7 +18,11 @@
 const data = {
   labels: [ {{!daynames}} ],
   datasets: [{
+%if mls:
+    label: 'Message counts by day of week from {{mls}}',
+%else:
     label: 'Message counts by day of week',
+%end
     data: [ {{daydata}}],
     borderWidth: 2,
     backgroundColor: 'rgba(0,0,0,0.5)',

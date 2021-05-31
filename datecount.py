@@ -8,6 +8,8 @@ import datetime
 from email.header import decode_header
 import sys
 
+badlists = { "dmarc-report" }
+
 class Datecount:
     def __init__(self, host='imap.ietf.org', iuser='anonymous', ipass='guest',
         months=12, doupdate=False, debug=False):
@@ -98,16 +100,20 @@ class Datecount:
 
         hours = 24 * [0]
         days = 7 * [0]
+        bogus = 0
 
         for mn, j in msgs.items():
             e = j[b'ENVELOPE']
             d = e.date
             # turn into UTC
             ud = d.astimezone(utc)
-            hours[ud.hour] += 1
+            if ud.hour or ud.minute:
+                hours[ud.hour] += 1
+            else:
+                bogus += 1
             days[ud.weekday()] += 1
         print(fname)
-        print(hours, sum(hours), '/', days, sum(days))
+        print(hours, sum(hours), bogus, '/', days, sum(days))
         if self.db:
             hargs = [ (mlist, i, hours[i]) for i in range(24) if hours[i] > 0 ]
             dargs = [ (mlist, i, days[i]) for i in range(7) if days[i] > 0 ]
@@ -129,7 +135,9 @@ class Datecount:
 
         flist = self.folders
         for f in flist:
-            self.dofolder(fname=f)
+            mlist = f.split('/')[-1]
+            if mlist not in badlists:   # mail not from humans
+                self.dofolder(fname=f)
 
 if __name__=="__main__":
     import argparse

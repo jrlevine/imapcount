@@ -18,7 +18,11 @@
 const data = {
   labels: [ {{hournames}} ],
   datasets: [{
+%if mls:
+    label: 'Message counts by hour from {{mls}}',
+%else:
     label: 'Message counts by hour (UTC)',
+%end
     data: [ {{hourdata}}],
     borderWidth: 2,
     backgroundColor: 'rgba(0,0,0,0.5)',
