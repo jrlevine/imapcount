@@ -10,8 +10,17 @@ class Imapcount:
     def __init__(self, host='imap.ietf.org', iuser='anonymous', ipass='guest',
         month=False, debug=False):
 
-        self.i = imapclient.IMAPClient(host,ssl=True)
+        if debug:
+            print("connect to",host)
+        self.i = imapclient.IMAPClient(host, port=143, ssl=False)
+        if debug:
+            print("starttls")
+        self.i.starttls()
+        if debug:
+            print("log in as",iuser)
         self.i.login(iuser, ipass)
+        if debug:
+            print("logged in")
         self.debug = debug
         
         # one week or month
