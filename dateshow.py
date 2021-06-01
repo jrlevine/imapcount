@@ -51,7 +51,7 @@ def getdb():
     global db
 
     if not db:
-        db = pymysql.connect(user='datecount',passwd='x',db='datecount', charset='utf8', use_unicode=True)
+        db = pymysql.connect(unix_socket="/tmp/mysql.sock", user='datecount',passwd='x',db='datecount', charset='utf8', use_unicode=True)
     return db
 
     

@@ -47,4 +47,12 @@ window.onload = function() {
         var ctx = document.getElementById('hourChart');
         var myLine = new Chart(ctx, config );
 };
+
+function beforePrintHandler () {
+    for (var id in Chart.instances) {
+        Chart.instances[id].resize();
+    }
+}
+
+window.onbeforeprint = beforePrintHandler;
 </script>

@@ -15,5 +15,7 @@ datecount.sql defines the MySQL database
 
 datecount.py counts message times by list for some period, default a year
 
+datecountr.py counts times in a list of date ranges
+
 dateshow.py and views/ and static/ WSGI script to display the data
 
