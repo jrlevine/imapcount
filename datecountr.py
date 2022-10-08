@@ -12,7 +12,7 @@ badlists = { "dmarc-report" }
 
 class Datecount:
     def __init__(self, host='imap.ietf.org', iuser='anonymous', ipass='guest',
-        months=12, dates=None, doupdate=False, debug=False):
+        months=12, dates=None, doupdate=False, debug=False, dotz=False):
 
         if debug:
             print("connect to",host)
@@ -42,7 +42,8 @@ class Datecount:
             self.db = pymysql.connect(user='datecount',passwd='x',db='datecount', charset='utf8', use_unicode=True)
         else:
             self.db = None
-        self.results = dict()
+        self.results = dict()           # time zones
+        self.dotz = dotz
         
     def closeimap(self):
         self.i.logout()
@@ -101,9 +102,10 @@ class Datecount:
             if self.debug:
                 print(f"date list {tbase}->{tend}", ym[:20])
 
-            msgs = self.i.fetch(ym,[b'ENVELOPE'])
-
-
+            if self.dotz:
+                msgs = self.i.fetch(ym,[b'ENVELOPE',b'RFC822.HEADER'])
+            else:
+                msgs = self.i.fetch(ym,[b'ENVELOPE'])
             for mn, j in msgs.items():
                 e = j[b'ENVELOPE']
                 d = e.date
@@ -111,6 +113,17 @@ class Datecount:
                 ud = d.astimezone(utc)
                 hours[ud.hour] += 1
                 days[ud.weekday()] += 1
+
+                if self.dotz:
+                    h = j[b'RFC822.HEADER']
+                    h2 = h.replace(b'\r\n ', b'  ') # combine continued lines
+                    hl = h2.split(b'\r\n')
+                    hd = [ x.decode(errors='replace') for x in hl if x.lower().startswith(b'date:') ]
+                    htz = hd[0].split()[-1]
+                    if htz in self.results:
+                        self.results[htz] += 1
+                    else:
+                        self.results[htz] = 1
 
         print(fname)
         print(hours, sum(hours), '/', days, sum(days))
@@ -139,6 +152,21 @@ class Datecount:
             if mlist not in badlists:   # mail not from humans
                 self.dofolder(fname=f)
 
+    def tzresults(self):
+        """ get results in order
+        """
+
+        def intx(s):
+            " int() with error default "
+            try:
+                return int(s)
+            except:
+                return 9999
+                
+        k = list(self.results.keys())
+        k.sort(key=intx)
+        return [ (i, self.results[i]) for i in k ]
+
 if __name__=="__main__":
     import argparse
     parser = argparse.ArgumentParser(description='make date histogram')
@@ -146,6 +174,7 @@ if __name__=="__main__":
     parser.add_argument("-m", type=int, help='number of months', default=12)
     parser.add_argument("-r", action='append', nargs=2, help='date ranges in form yyyy-mm-dd yyyy-mm-dd')
     parser.add_argument("-u", action='store_true', help='update database')
+    parser.add_argument("-z", action='store_true', help='count time zones')
     parser.add_argument("list", type=str, help='list to count or "all"')
     args = parser.parse_args()
 
@@ -166,8 +195,15 @@ if __name__=="__main__":
                 print(f"from {ddst} to {ddet}", ddst, ddet)
             dates.append((ddst, ddet))
 
-    di = Datecount(months=args.m, dates=dates, debug=args.d, doupdate=args.u)
+    di = Datecount(months=args.m, dates=dates, debug=args.d, doupdate=args.u, dotz=args.z)
     if args.list == "all":
         di.allfolders()
     else:
         di.dofolder(args.list)
+    if args.z:
+        r = di.tzresults()
+        m = max((x[1] for x in r))
+        
+        for k, i in r:
+            print("{0} {1:3d} {2}".format(k, i, int(50 * i / m) * '*'))
+

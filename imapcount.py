@@ -54,10 +54,11 @@ class Imapcount:
                 return x
         return None
 
-    def dofolder(self, mlist, count=False, fto=None, derole=None, prev=None, pct=False, min=None):
+    def dofolder(self, mlist, count=False, fto=None, derole=None, prev=None, pct=False, min=None, nper=1):
         """
         read new messages from a folder
         report number and size, by count if count otherwise size
+        nper number of periods
         derole domain to say "Role Aaccount"
         fto address to put into a To: header
         """
@@ -78,13 +79,13 @@ class Imapcount:
         now = datetime.datetime.today()
         if prev:
             tend = now  - datetime.timedelta(days=ndays*prev)
-            tbase = tend - datetime.timedelta(days=ndays)
+            tbase = tend - datetime.timedelta(days=ndays*nper)
             if self.debug:
                 print("from",self.tbase,"to",self.newtbase)
             ym = self.i.search(['BEFORE', tend, 'SINCE', tbase]) # get that week's stuff
         else:
             tend = now
-            tbase = now  - datetime.timedelta(days=ndays)
+            tbase = now  - datetime.timedelta(days=ndays*nper)
             if self.debug:
                 print("from",tbase,"to", now)
             ym = self.i.search(['SINCE', tbase]) # get the last week's or month's
@@ -181,7 +182,8 @@ if __name__=="__main__":
     parser.add_argument("-m", action='store_true', help='month rather than week')
     parser.add_argument("-f", action='store_true', help='report percent (fraction)')
     parser.add_argument("-c", action='store_true', help='sort by count')
-    parser.add_argument("-p", type=int, help='previous N weeks or months')
+    parser.add_argument("-p", type=int, help='report N periods ago')
+    parser.add_argument("-n", type=int, help='number of periods', default=1)
     parser.add_argument("-q", type=int, help='minimum number to report', default=10)
     parser.add_argument("--to", type=str, help='To address')
     parser.add_argument("-r", type=str, help='Role account domain')
@@ -189,7 +191,7 @@ if __name__=="__main__":
     args = parser.parse_args()
 
     ii = Imapcount(month=args.m, debug=args.d)
-    if ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r, prev=args.p, pct=args.f, min=args.q):
+    if ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r, prev=args.p, pct=args.f, min=args.q, nper=args.n):
         exit(0)
     # no report
     exit(1)
