@@ -8,6 +8,8 @@ from email.header import decode_header
 import sys
 
 class Imapcount:
+    nthread = 4 # how many names to thread
+    
     def __init__(self, host='imap.ietf.org', iuser='anonymous', ipass='guest',
         month=False, debug=False):
 
@@ -54,7 +56,8 @@ class Imapcount:
                 return x
         return None
 
-    def dofolder(self, mlist, count=False, fto=None, derole=None, prev=None, pct=False, min=None, dototal=False, nper=1):
+    def dofolder(self, mlist, count=False, fto=None, derole=None,
+        prev=None, pct=False, min=None, dototal=False, nper=1, thread=False):
         """
         read new messages from a folder
         report number and size, by count if count otherwise size
@@ -142,6 +145,14 @@ class Imapcount:
         print("Content-Type: text/plain; charset=utf-8")
         print("Mime-Version: 1.0")
         print("Content-Transfer-Encoding: 8bit")
+        msgids = [ f"<count-{mlist}-{(datetime.date.today() - datetime.timedelta(weeks=i)).isoformat()}@examp1e.com>"
+            for i in range(Imapcount.nthread) ]
+        if self.debug:
+            print("msgids", msgids)
+        if thread:
+            print(f"Message-ID: {msgids[0]}")
+            print(f"In-Reply-To: {msgids[1]}")
+            print(f"""References: {" ".join(msgids[1:])}""")
         print()
 
         addrs = list(mname)
@@ -200,12 +211,14 @@ if __name__=="__main__":
     parser.add_argument("-n", type=int, help='number of periods to report', default=1)
     parser.add_argument("-q", type=int, help='minimum number to report', default=10)
     parser.add_argument("--to", type=str, help='To address')
+    parser.add_argument("--th", action='store_true', help='Thread message IDs')
     parser.add_argument("-r", type=str, help='Role account domain')
     parser.add_argument("list", type=str, help='list to count')
     args = parser.parse_args()
 
     ii = Imapcount(month=args.m, debug=args.d)
-    if ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r, prev=args.p, pct=args.f, min=args.q, dototal=args.t, nper=args.n):
+    if ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r, prev=args.p,
+        pct=args.f, min=args.q, dototal=args.t, nper=args.n, thread=args.th):
         exit(0)
     # no report
     exit(1)
