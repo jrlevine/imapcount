@@ -57,7 +57,7 @@ class Imapcount:
         return None
 
     def dofolder(self, mlist, count=False, fto=None, derole=None,
-        prev=None, pct=False, min=None, dototal=False, nper=1, thread=False):
+        prev=None, pct=False, min=None, dototal=False, nper=1, thread=False, expires=False):
         """
         read new messages from a folder
         report number and size, by count if count otherwise size
@@ -79,7 +79,7 @@ class Imapcount:
         else:
             ndays = 7
 
-        now = datetime.datetime.today()
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
         if prev:
             tend = now  - datetime.timedelta(days=ndays*prev)
             tbase = tend - datetime.timedelta(days=ndays*nper)
@@ -153,6 +153,9 @@ class Imapcount:
             print(f"Message-ID: {msgids[0]}")
             print(f"In-Reply-To: {msgids[1]}")
             print(f"""References: {" ".join(msgids[1:])}""")
+        if expires:
+            texp = now + datetime.timedelta(days=ndays*nper)
+            print(f"""Expires: {texp.strftime("%a, %d %b %Y %H:%M:%S %z")}""")
         print()
 
         addrs = list(mname)
@@ -212,13 +215,15 @@ if __name__=="__main__":
     parser.add_argument("-q", type=int, help='minimum number to report', default=10)
     parser.add_argument("--to", type=str, help='To address')
     parser.add_argument("--th", action='store_true', help='Thread message IDs')
+    parser.add_argument("--ex", action='store_true', help='Add Expires header')
     parser.add_argument("-r", type=str, help='Role account domain')
     parser.add_argument("list", type=str, help='list to count')
     args = parser.parse_args()
 
     ii = Imapcount(month=args.m, debug=args.d)
     if ii.dofolder(args.list, count=args.c, fto=args.to, derole=args.r, prev=args.p,
-        pct=args.f, min=args.q, dototal=args.t, nper=args.n, thread=args.th):
+        pct=args.f, min=args.q, dototal=args.t, nper=args.n, thread=args.th,
+        expires=args.ex):
         exit(0)
     # no report
     exit(1)
